@@ -34,6 +34,19 @@ function processPayment(order) {
 }
 ```
 
+```ruby
+# Easy to mock
+def process_payment(order, payment_client)
+  payment_client.charge(order.total)
+end
+
+# Hard to mock
+def process_payment(order)
+  client = StripeClient.new(ENV['STRIPE_KEY'])
+  client.charge(order.total)
+end
+```
+
 **2. Prefer SDK-style interfaces over generic fetchers**
 
 Create specific functions for each external operation instead of one generic function with conditional logic:
@@ -50,6 +63,30 @@ const api = {
 const api = {
   fetch: (endpoint, options) => fetch(endpoint, options),
 };
+```
+
+```ruby
+# GOOD: Each method is independently mockable
+module Api
+  def self.get_user(id)
+    Faraday.get("/users/#{id}")
+  end
+
+  def self.get_orders(user_id)
+    Faraday.get("/users/#{user_id}/orders")
+  end
+
+  def self.create_order(data)
+    Faraday.post('/orders', data)
+  end
+end
+
+# BAD: Mocking requires conditional logic inside the mock
+module Api
+  def self.fetch(endpoint, options = {})
+    Faraday.run_request(options[:method] || :get, endpoint, options[:body], {})
+  end
+end
 ```
 
 The SDK approach means:
